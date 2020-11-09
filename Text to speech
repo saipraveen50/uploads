@@ -1,0 +1,107 @@
+using IBM.Cloud.SDK.Core.Authentication.Iam;
+using IBM.Watson.TextToSpeech.v1;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace TextTospeechConverter
+{
+    public partial class Form1 : Form
+    {
+        string key = "KEY";
+        string uRL = "URL";
+        public Form1()
+        {
+            InitializeComponent();
+        }
+
+        private void BtnSave_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                SaveFileDialog fileDialog = new SaveFileDialog();
+                fileDialog.Filter = "wav Files|*.wav";
+                fileDialog.ShowDialog();
+                string fname = fileDialog.FileName;
+
+                IamAuthenticator authenticator = new IamAuthenticator(apikey: key);
+                TextToSpeechService textToSpeech = new TextToSpeechService(authenticator);
+                textToSpeech.SetServiceUrl(uRL);
+
+                var result = textToSpeech.Synthesize
+                (
+                   text: textBox1.Text,
+                   accept: "audio/wav",
+                   voice: comboBox1.Text
+                );
+
+                using (FileStream fs = File.OpenWrite(fname))
+                {
+                    result.Result.WriteTo(fs);
+                    fs.Close();
+                    result.Result.Close();
+                }
+                MessageBox.Show("Successful");
+                axWindowsMediaPlayer1.URL = fname;
+            }
+            catch (Exception)
+            {
+                MessageBox.Show("Please select a name for file ");
+            }
+        }
+
+        private void BtnOpen_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "Text Files|*.txt";
+            openFileDialog.ShowDialog();
+            string fname = openFileDialog.FileName;
+
+            StreamReader streamReader = new StreamReader(fname);
+            textBox1.Text = streamReader.ReadToEnd();
+            streamReader.Close();
+        }
+
+        private void Form1_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                IamAuthenticator authenticator = new IamAuthenticator(apikey: key);
+
+                TextToSpeechService textToSpeech = new TextToSpeechService(authenticator);
+                textToSpeech.SetServiceUrl(uRL);
+
+                var result = textToSpeech.ListVoices();
+
+                foreach (var voice in result.Result._Voices)
+                {
+                    comboBox1.Items.Add(voice.Name);
+                }
+            }
+            catch (Exception)
+            {
+
+                MessageBox.Show("Please Select Voice");
+            }
+            
+
+        }
+
+        private void BtnExit_Click(object sender, EventArgs e)
+        {
+            Application.Exit();
+        }
+
+        private void axWindowsMediaPlayer1_Enter(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
